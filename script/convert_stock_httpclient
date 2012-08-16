@@ -1,6 +1,6 @@
 #!/bin/bash
-# httpclientandroidlib version
-HTTPCLIENTANDROIDLIB_VER=1.1.1
+# httpclientandroidlib version -- for sanity, keep in sync with the apache version
+HTTPCLIENTANDROIDLIB_VER=4.2.1
 # Checkout svn repositories of core/client/cache
 svn checkout http://svn.apache.org/repos/asf/httpcomponents/httpcore/tags/4.2.1/httpcore/ httpcore
 svn checkout http://svn.apache.org/repos/asf/httpcomponents/httpclient/tags/4.2.1/httpclient/ httpclient
