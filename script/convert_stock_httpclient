@@ -15,14 +15,16 @@ rm -Rf httpclient-cache/src/main/java/org/apache/http/impl/client/cache/ehcache
 rm -Rf httpclient-cache/src/main/java/org/apache/http/impl/client/cache/memcached
 
 PROJECTNAME=httpclientandroidlib
-PACKAGENAME=ch.boye.httpclientandroidlib
+PACKAGENAME=org.opendatakit.httpclientandroidlib
 ROOTDIR=`pwd`
 PACKAGEDIR=${ROOTDIR}/${PROJECTNAME}/src/${PACKAGENAME//./\/}
 ANDROIDPROJECTPATH=${ROOTDIR}/${PROJECTNAME}
+PATH=${PATH}:${ROOTDIR}/android-sdk-linux/tools
+export PATH
 
 # Create Android library project
 rm -Rf ${ANDROIDPROJECTPATH}
-android create lib-project -n ${PROJECTNAME} -t android-3 -p ${ANDROIDPROJECTPATH} -k ${PACKAGENAME}
+android create lib-project -n ${PROJECTNAME} -t android-10 -p ${ANDROIDPROJECTPATH} -k ${PACKAGENAME}
 
 # Create package directory
 mkdir -p ${PACKAGEDIR}
@@ -78,13 +80,8 @@ find . -name "NTLMEngineImpl.java" -exec sed -i -n '1h;1!H;${;g;s/Base64.encodeB
 find . -name "*.java" -exec sed -i -n '1h;1!H;${;g;s/Base64.decodeBase64(\([^;]*\));/Base64.decode(\1, Base64.NO_WRAP);/g;p;}' {} +
 
 # Replace logging stuff
-find . -name "*.java" -exec sed -i "/commons\.logging\.Log;/c import ${PACKAGENAME}\.androidextra\.HttpClientAndroidLog;" {} +
-find . -name "*.java" -exec sed -i "/commons\.logging\.LogFactory;/c \/\* LogFactory removed by HttpClient for Android script. \*\/" {} +
-find . -name "*.java" -exec sed -i 's/Log log/HttpClientAndroidLog log/g' {} +
-find . -name "*.java" -exec sed -i 's/private final HttpClientAndroidLog \(.*\) = LogFactory.getLog(\(.*\));/public HttpClientAndroidLog \1 = new HttpClientAndroidLog(\2);/g' {} +
-find . -name "*.java" -exec sed -i 's/private final Log \(.*\) = LogFactory.getLog(\(.*\));/public HttpClientAndroidLog \1 = new HttpClientAndroidLog(\2);/g' {} +
-find . -name "*.java" -exec sed -i 's/private final HttpClientAndroidLog log/public HttpClientAndroidLog log/g' {} +
-find . -name "*.java" -exec sed -i 's/LogFactory.getLog(\(.*\))/new HttpClientAndroidLog(\1)/g' {} +
+find . -name "*.java" -exec sed -i "/commons\.logging\.Log;/c import ${PACKAGENAME}\.androidextra\.Log;" {} +
+find . -name "*.java" -exec sed -i "/commons\.logging\.LogFactory;/c import ${PACKAGENAME}\.androidextra\.LogFactory;" {} +
 
 # Rename package
 find . -name "*.java" -exec sed -i "s/org\.apache\.http/${PACKAGENAME}/g" {} +
