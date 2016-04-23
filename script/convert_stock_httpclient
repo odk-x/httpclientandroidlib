@@ -55,29 +55,7 @@ cd ..
 # Apply Android bugfix https://android-review.googlesource.com/#/c/15755/1/src/org/apache/http/impl/conn/DefaultClientConnectionOperator.java
 find . -name "DefaultClientConnectionOperator.java" -exec sed -i "s/conn.getSocket(), target.getHostName(), target.getPort()/conn.getSocket(), target.getHostName(), schm.resolvePort(target.getPort())/g" {} +
 
-# Delete classes dependent on org.ietf
-rm impl/auth/NegotiateScheme.java
-rm impl/auth/NegotiateSchemeFactory.java
-rm impl/auth/GGSSchemeBase.java
-rm impl/auth/KerberosScheme.java
-rm impl/auth/KerberosSchemeFactory.java
-rm impl/auth/SPNegoScheme.java
-rm impl/auth/SPNegoSchemeFactory.java
-
-find . -name "*.java" -exec sed -i "/impl\.auth\.KerberosSchemeFactory;/c \/\* KerberosSchemeFactory removed by HttpClient for Android script. \*\/" {} +
-find . -name "*.java" -exec sed -i "/impl\.auth\.SPNegoSchemeFactory;/c \/\* SPNegoSchemeFactory removed by HttpClient for Android script. \*\/" {} +
-find . -name "*.java" -exec sed -i "/impl\.auth\.NegotiateSchemeFactory;/c \/\* NegotiateSchemeFactory removed by HttpClient for Android script. \*\/" {} +
-find . -name "ProxyClient.java" -exec sed -i -n '1h;1!H;${;g;s/this.authSchemeRegistry.register([^)]*SPNegoSchemeFactory());/\/\* SPNegoSchemeFactory removed by HttpClient for Android script. \*\//g;p;}' {} +
-find . -name "ProxyClient.java" -exec sed -i -n '1h;1!H;${;g;s/this.authSchemeRegistry.register([^)]*KerberosSchemeFactory());/\/\* KerberosSchemeFactory removed by HttpClient for Android script. \*\//g;p;}' {} +
-find . -name "AbstractHttpClient.java" -exec sed -i -n '1h;1!H;${;g;s/registry.register([^)]*SPNegoSchemeFactory());/\/\* SPNegoSchemeFactory removed by HttpClient for Android script. \*\//g;p;}' {} +
-find . -name "AbstractHttpClient.java" -exec sed -i -n '1h;1!H;${;g;s/registry.register([^)]*KerberosSchemeFactory());/\/\* KerberosSchemeFactory removed by HttpClient for Android script. \*\//g;p;}' {} +
-find . -name "AbstractHttpClient.java" -exec sed -i -n '1h;1!H;${;g;s/registry.register([^)]*NegotiateSchemeFactory());/\/\* NegotiateSchemeFactory removed by HttpClient for Android script. \*\//g;p;}' {} +
-
-# Replace Base64 encoding with android.util.Base64
-find . -name "*.java" -exec sed -i "/commons\.codec\.binary\.Base64;/c import ${PACKAGENAME}\.androidextra.Base64;" {} +
-find . -name "BasicScheme.java" -exec sed -i -n '1h;1!H;${;g;s/Base64.encodeBase64(\([^;]*\));/Base64.encode(\1, Base64.NO_WRAP);/g;p;}' {} +
-find . -name "NTLMEngineImpl.java" -exec sed -i -n '1h;1!H;${;g;s/Base64.encodeBase64(resp)/Base64.encode(resp, Base64.NO_WRAP)/g;p;}' {} +
-find . -name "*.java" -exec sed -i -n '1h;1!H;${;g;s/Base64.decodeBase64(\([^;]*\));/Base64.decode(\1, Base64.NO_WRAP);/g;p;}' {} +
+# Base64 is from commons-codec-1.10 -- no need to change it
 
 # Replace logging stuff
 find . -name "*.java" -exec sed -i "/commons\.logging\.Log;/c import ${PACKAGENAME}\.androidextra\.Log;" {} +
@@ -86,9 +64,66 @@ find . -name "*.java" -exec sed -i "/commons\.logging\.LogFactory;/c import ${PA
 # Rename package
 find . -name "*.java" -exec sed -i "s/org\.apache\.http/${PACKAGENAME}/g" {} +
 
+# Delete classes dependent on org.ietf
+rm auth/KerberosCredentials.java
+rm impl/auth/GGSSchemeBase.java
+rm impl/auth/KerberosScheme.java
+rm impl/auth/KerberosSchemeFactory.java
+rm impl/auth/SPNegoScheme.java
+rm impl/auth/SPNegoSchemeFactory.java
+
+# Delete deprecated classes that are not used internally (or whose use is removed below)
+rm auth/AuthSchemeRegistry.java
+rm cookie/CookieSpecRegistry.java
+rm impl/client/ProxyClient.java
+rm impl/client/RequestWrapper.java
+rm impl/client/EntityEnclosingRequestWrapper.java
+
+# local variables holding the sed instructions (needed for PACKAGENAME expansion)
+protocolVersionSub='1h;1!H;${;g;s/HttpProtocolParams.getVersion(getParams())/\/\* HttpProtocolParams removed by HttpClient for Android script. \*\/ '"${PACKAGENAME}"'\.HttpVersion.HTTP_1_1/g;p;}'
+externalExtractCn='1h;1!H;${;g;s/DefaultHostnameVerifier.extractCN/'"${PACKAGENAME}"'\.androidextra\.AndroidLibHelper.extractCN/g;p;}'
+internalExtractCn='1h;1!H;${;g;s/extractCN(subjectPrincipal.getName(X500Principal.RFC2253))/'"${PACKAGENAME}"'\.androidextra\.AndroidLibHelper.extractCN(subjectPrincipal.getName(X500Principal.RFC2253))/g;p;}'
+localeRootSub='1h;1!H;${;g;s/Locale.ROOT/'"${PACKAGENAME}"'\.androidextra\.AndroidLibHelper.getRootLocale()/g;p;}'
+
+find . -name "*.java" -exec sed -i "/impl\.auth\.KerberosSchemeFactory;/c \/\* KerberosSchemeFactory removed by HttpClient for Android script. \*\/" {} +
+find . -name "*.java" -exec sed -i "/impl\.auth\.SPNegoSchemeFactory;/c \/\* SPNegoSchemeFactory removed by HttpClient for Android script. \*\/" {} +
+find . -name "*.java" -exec sed -i "/impl\.client\.RequestWrapper;/c \/\* RequestWrapper removed by HttpClient for Android script. \*\/" {} +
+find . -name "*.java" -exec sed -i "/params\.HttpProtocolParams;/c \/\* HttpProtocolParams removed by HttpClient for Android script. \*\/" {} +
+
+# Remove test for use of RequestWrapper (which we've deleted)
+find . -name "DefaultHttpRequestRetryHandler.java" -exec sed -i '/^.*request instanceof RequestWrapper.*$/,+2c \/\* RequestWrapper removed by HttpClient for Android script. \*\/' {} +
+
+# Remove registrations of Kerberos and SPNego protocols
+find . -name "HttpClientBuilder.java" -exec sed -i -n '1h;1!H;${;g;s/.register([^)]*SPNegoSchemeFactory())/\/\* SPNegoSchemeFactory removed by HttpClient for Android script. \*\//g;p;}' {} +
+find . -name "HttpClientBuilder.java" -exec sed -i -n '1h;1!H;${;g;s/.register([^)]*KerberosSchemeFactory())/\/\* KerberosSchemeFactory removed by HttpClient for Android script. \*\//g;p;}' {} +
+
+# Assume HTTP 1.1 if Protocol is not specified in HttpRequestBase (do not hunt for it in client's request params)
+find . -name "HttpRequestBase.java" -exec sed -i -n "${protocolVersionSub}" {} +
+
+# convert string.isEmpty() to (string.length() == 0)
+find . -name "HttpRequestBase.java" -exec sed -i -n '1h;1!H;${;g;s/uritext.isEmpty()/(uritext.length() == 0)/g;p;}' {} +
+find . -name "DefaultHostnameVerifier.java" -exec sed -i -n '1h;1!H;${;g;s/prefix.isEmpty()/(prefix.length() == 0)/g;p;}' {} +
+find . -name "DefaultHostnameVerifier.java" -exec sed -i -n '1h;1!H;${;g;s/suffix.isEmpty()/(suffix.length() == 0)/g;p;}' {} +
+
+# remove naming usage and delete LdapName parsing of cert for deprecated CN match
+find . -name "DefaultHostnameVerifier.java" -exec sed -i "/javax\.naming\..*;/c \/\* CN matching has been deprecated by rfc2818 and removed by HttpClient for Android script. \*\/" {} +
+find . -name "AbstractVerifier.java" -exec sed -i -n "${externalExtractCn}" {} +
+find . -name "DefaultHostnameVerifier.java" -exec sed -i -n "${internalExtractCn}" {} +
+find . -name "DefaultHostnameVerifier.java" -exec sed -i -n '1h;1!H;${;g;/^.*extractCN(final String subjectPrincipal) throws SSLException.*$/,+27c \/\* extractCN removed by HttpClient for Android script. \*\//g;p;}' {} +
+
+find . -name "DefaultHostnameVerifier.java" -exec sed -i '/^.*extractCN(final String subjectPrincipal) throws SSLException.*$/,+27c \/\* extractCN removed by HttpClient for Android script. \*\/' {} +
+
+
+# replace Locale.ROOT with AndroidLibHelper impl
+find . -name "AbstractVerifier.java" -exec sed -i -n "${localeRootSub}" {} +
+find . -name "DefaultHostnameVerifier.java" -exec sed -i -n "${localeRootSub}" {} +
+
 cd ${ANDROIDPROJECTPATH}
 sed -i "s/ACTIVITY_ENTRY_NAME/${PROJECTNAME}/g" AndroidManifest.xml
 sed -i '/<\/project>/ i <path id="android\.libraries\.src"><path refid="project\.libraries\.src" \/><\/path><path id="android\.libraries\.jars"><path refid="project\.libraries\.jars" \/><\/path>' build.xml
+
+cp ${ROOTDIR}/libs/* ${ANDROIDPROJECTPATH}/libs
+
 cd ${ROOTDIR}
 tar cvfz httpclientandroidlib-${HTTPCLIENTANDROIDLIB_VER}.tar.gz httpclientandroidlib
 cd ${ANDROIDPROJECTPATH}
