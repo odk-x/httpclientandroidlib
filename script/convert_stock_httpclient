@@ -55,12 +55,15 @@ cd ..
 # Apply Android bugfix https://android-review.googlesource.com/#/c/15755/1/src/org/apache/http/impl/conn/DefaultClientConnectionOperator.java
 find . -name "DefaultClientConnectionOperator.java" -exec sed -i "s/conn.getSocket(), target.getHostName(), target.getPort()/conn.getSocket(), target.getHostName(), schm.resolvePort(target.getPort())/g" {} +
 
-# Base64 is from commons-codec-1.10 -- no need to change it
+# Replace Base64 encoding with PACKAGENAME.androidextra version that leverages android.util.Base64
+# (there is an ancient org.apache.commons.codec that clashes)
+find . -name "BasicScheme.java" -exec sed -i "/commons\.codec\.binary\.Base64;/c import ${PACKAGENAME}\.androidextra.Base64;" {} +
+find . -name "NTLMEngineImpl.java" -exec sed -i "/commons\.codec\.binary\.Base64;/c import ${PACKAGENAME}\.androidextra.Base64;" {} +
 
 # Replace logging stuff
 find . -name "*.java" -exec sed -i "/commons\.logging\.Log;/c import ${PACKAGENAME}\.androidextra\.Log;" {} +
 find . -name "*.java" -exec sed -i "/commons\.logging\.LogFactory;/c import ${PACKAGENAME}\.androidextra\.LogFactory;" {} +
-
+ 
 # Rename package
 find . -name "*.java" -exec sed -i "s/org\.apache\.http/${PACKAGENAME}/g" {} +
 
