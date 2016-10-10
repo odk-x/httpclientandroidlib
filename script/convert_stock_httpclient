@@ -29,6 +29,10 @@ android create lib-project -n ${PROJECTNAME} -t android-10 -p ${ANDROIDPROJECTPA
 # Create package directory
 mkdir -p ${PACKAGEDIR}
 
+# Patch original source files
+patch httpclient/src/main/java/org/apache/http/conn/ssl/SSLConnectionSocketFactory.java \
+   < ${ROOTDIR}/patches/SSLConnectionSocketFactory.java
+
 # Copy all source files to new package directory
 CLIENTDIR=`find . -type d | grep '/httpclient/src/main/java/org/apache/http$'`
 CLIENTCACHEDIR=`find . -type d | grep '/httpclient-cache/src/main/java/org/apache/http$'`
