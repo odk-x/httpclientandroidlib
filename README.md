@@ -1,6 +1,6 @@
 # httpclientandroid
 
-This project is __*actively maintained for [ODK-X](https://docs.opendatakit.org/odk-x/)*__. It was replaced by [OkHttp](https://square.github.io/okhttp/) in ODK Collect 1.23.
+This project is __*actively maintained for [ODK-X](https://github.com/opendatakit/tool-suite-x)*__. It was replaced by [OkHttp](https://square.github.io/okhttp/) in ODK Collect v1.23.
 
 This is a script to change the package name of stock apache http client libraries so that newer libraries can 
 be used on Android (otherwise, each Android OS release specifies its own version of these libraries).
